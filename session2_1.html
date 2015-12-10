@@ -8,9 +8,54 @@
     <meta http-equiv="Content-Style-Type" content="text/css" />
     <meta http-equiv="Content-Script-Type" content="text/javascript" />
     <title>2.1. 点を描く</title>
+    <script type="text/javascript">
+
+/* 共通処理 */
+
+var canvas;
+var ctx;
+
+window.onload = function() {
+    canvas = document.getElementById("myCanvas");
+    ctx = canvas.getContext("2d");
+    main();
+};
+
+var createRgb = function(red, green, blue) {
+    return "#"
+        + ("0" + red.toString(16)).substr(-2)
+        + ("0" + green.toString(16)).substr(-2)
+        + ("0" + blue.toString(16)).substr(-2)
+    ;
+};
+
+var getRandomInt = function(min, max) {
+      return Math.floor( Math.random() * (max - min + 1) ) + min;
+};
+
+/* 個別処理 */
+
+var main = function() {
+    for(var i = 0; i < 100; i++) {
+        x = getRandomInt(0, 319);
+        y = getRandomInt(0, 199);
+        red = getRandomInt(0, 255);
+        green = getRandomInt(0, 255);
+        blue = getRandomInt(0, 255);
+        pset(x, y, createRgb(red, green, blue));
+    }
+}
+
+var pset = function(x, y) {
+    /* 1pxでは見づらいため、2pxとしている */
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(x * 2, y * 2, 2, 2);
+};
+
+    </script>
   </head>
   <body>
     <h1>2.1. 点を描く</h1>
-    <canvas id="canvassample" width="640" height="400" style="border: solid 1px black; "></canvas>
+    <canvas id="myCanvas" width="640" height="400" style="border: solid 1px black; "></canvas>
   </body>
 </html>
