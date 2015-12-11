@@ -46,9 +46,9 @@ var main = function() {
     }
 }
 
-var pset = function(x, y) {
+var pset = function(x, y, rgb) {
     /* 1pxでは見づらいため、2pxとしている */
-    ctx.fillStyle = "#000000";
+    ctx.fillStyle = rgb;
     ctx.fillRect(x * 2, y * 2, 2, 2);
 };
 
