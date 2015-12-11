@@ -55,33 +55,82 @@ var pset = function(x, y, rgb) {
 };
 
 var line = function(x1, y1, x2, y2, rgb) {
-    if (x1 > x2) {
-        x2 = [x1, x1 = x2][0];  /* swap x1 and x2 */
-        y2 = [y1, y1 = y2][0];  /* swap y1 and y2 */
-    }
-
-    if (y1 > y2) {
-        /* TODO */
-        return;
-    }
-    if (x2 - x1 < y2 - y1) {
-        /* TODO */
-        return;
-    }
-
-    var dx = x2 - x1;
-    var dy = y2 - y1;
-    var d = 2 * dy - dx;
-    pset(x1, y1, rgb);
-    var y = y1;
-    for(var x = x1 + 1; x <= x2; x++) {
-        if (d >= 0) {
-            y++;
-            d += 2 * (dy - dx);
-        } else {
-            d += 2 * dy;
+    if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
+        if (x1 > x2) {
+            x2 = [x1, x1 = x2][0];  /* swap x1 and x2 */
+            y2 = [y1, y1 = y2][0];  /* swap y1 and y2 */
         }
-        pset(x, y , rgb);
+        if (y1 < y2) {
+            /* Xを1ずつ増やしてYが増加する線分 */
+            var dx = x2 - x1;
+            var dy = y2 - y1;
+            var d = 2 * dy - dx;
+            pset(x1, y1, rgb);
+            var y = y1;
+            for(var x = x1 + 1; x <= x2; x++) {
+                if (d >= 0) {
+                    y++;
+                    d += 2 * (dy - dx);
+                } else {
+                    d += 2 * dy;
+                }
+                pset(x, y , rgb);
+            }
+        } else {
+            /* Xを1ずつ増やしてYが減少する線分 */
+            var dx = x2 - x1;
+            var dy = -(y2 - y1);
+            var d = 2 * dy - dx;
+            pset(x1, y1, rgb);
+            var y = y1;
+            for(var x = x1 + 1; x <= x2; x++) {
+                if (d >= 0) {
+                    y--;
+                    d += 2 * (dy - dx);
+                } else {
+                    d += 2 * dy;
+                }
+                pset(x, y , rgb);
+            }
+        }
+    } else {
+        if (y1 > y2) {
+            y2 = [y1, y1 = y2][0];  /* swap y1 and y2 */
+            x2 = [x1, x1 = x2][0];  /* swap x1 and x2 */
+        }
+        if (x1 < x2) {
+            /* Yを1ずつ増やしてXが増加する線分 */
+            var dy = y2 - y1;
+            var dx = x2 - x1;
+            var d = 2 * dx - dy;
+            pset(x1, y1, rgb);
+            var x = x1;
+            for(var y = y1 + 1; y <= y2; y++) {
+                if (d >= 0) {
+                    x++;
+                    d += 2 * (dx - dy);
+                } else {
+                    d += 2 * dx;
+                }
+                pset(x, y , rgb);
+            }
+        } else {
+            /* Yを1ずつ増やしてXが減少する線分 */
+            var dy = y2 - y1;
+            var dx = -(x2 - x1);
+            var d = 2 * dx - dy;
+            pset(x1, y1, rgb);
+            var x = x1;
+            for(var y = y1 + 1; y <= y2; y++) {
+                if (d >= 0) {
+                    x--;
+                    d += 2 * (dx - dy);
+                } else {
+                    d += 2 * dx;
+                }
+                pset(x, y , rgb);
+            }
+        }
     }
 };
 
