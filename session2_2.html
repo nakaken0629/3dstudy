@@ -55,18 +55,40 @@ var pset = function(x, y, rgb) {
 };
 
 var line = function(x1, y1, x2, y2, rgb) {
-    ctx.strokeStyle = rgb;
-    ctx.lineWidth = 2.0;
-    ctx.beginPath();
-    ctx.moveTo(x1 * 2, y1 * 2);
-    ctx.lineTo(x2 * 2, y2 * 2);
-    ctx.stroke();
+    if (x1 > x2) {
+        x2 = [x1, x1 = x2][0];  /* swap x1 and x2 */
+        y2 = [y1, y1 = y2][0];  /* swap y1 and y2 */
+    }
+
+    if (y1 > y2) {
+        /* TODO */
+        return;
+    }
+    if (x2 - x1 < y2 - y1) {
+        /* TODO */
+        return;
+    }
+
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var d = 2 * dy - dx;
+    pset(x1, y1, rgb);
+    var y = y1;
+    for(var x = x1 + 1; x <= x2; x++) {
+        if (d >= 0) {
+            y++;
+            d += 2 * (dy - dx);
+        } else {
+            d += 2 * dy;
+        }
+        pset(x, y , rgb);
+    }
 };
 
     </script>
   </head>
   <body>
-    <h1>2.1. 点を描く</h1>
+    <h1>2.2. 線分を描く</h1>
     <canvas id="myCanvas" width="640" height="400" style="border: solid 1px black; "></canvas>
   </body>
 </html>
