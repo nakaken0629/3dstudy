@@ -30,7 +30,7 @@ var createRgb = function(red, green, blue) {
 };
 
 var getRandomInt = function(min, max) {
-      return Math.floor( Math.random() * (max - min + 1) ) + min;
+      return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
 /* 個別処理 */
@@ -46,14 +46,8 @@ var main = function() {
         red = getRandomInt(0, 255);
         green = getRandomInt(0, 255);
         blue = getRandomInt(0, 255);
-        fillTriangle1(x1, y1, x2, y2, x3, y3, createRgb(red, green, blue));
+        fillTriangle2(x1, y1, x2, y2, x3, y3, createRgb(red, green, blue));
     }
-};
-
-var pset = function(x, y, rgb) {
-    /* 1pxでは見づらいため、2pxとしている */
-    ctx.fillStyle = rgb;
-    ctx.fillRect(x * 2, y * 2, 2, 2);
 };
 
 var fillTriangle1 = function(x1, y1, x2, y2, x3, y3, rgb) {
@@ -66,6 +60,55 @@ var fillTriangle1 = function(x1, y1, x2, y2, x3, y3, rgb) {
     ctx.lineTo(x1 * 2, y1 * 2);
     ctx.closePath();
     ctx.fill();
+};
+
+var pset = function(x, y, rgb) {
+    /* 1pxでは見づらいため、2pxとしている */
+    ctx.fillStyle = rgb;
+    ctx.fillRect(x * 2, y * 2, 2, 2);
+};
+
+var fillTriangle2 = function(x1, y1, x2, y2, x3, y3, rgb) {
+    console.log("x1, y1 = " + x1 + ", " + y1);
+    console.log("x2, y2 = " + x2 + ", " + y2);
+    console.log("x3, y3 = " + x3 + ", " + y3);
+    /* 素朴なアルゴリズム */
+    var xmin = Math.min(x1, x2, x3);
+    var ymin = Math.min(y1, y2, y3);
+    var xmax = Math.max(x2, x2, x3);
+    var ymax = Math.max(y1, y2, y3);
+
+    for(var y = ymin; y <= ymax; y++) {
+        /* y軸方向にスキャンする */
+        var xl = null;  /* x left */
+        var xr = null;  /* x right */
+        var pairs = [[x1, y1, x2, y2], [x2, y2, x3, y3], [x3, y3, x1, y1]];
+        for(var i = 0; i < pairs.length; i++) {
+            /* ３本の直線とスキャンラインの交点を求める */
+            var pair = pairs[i];
+            var _x1 = pair[0];
+            var _y1 = pair[1];
+            var _x2 = pair[2];
+            var _y2 = pair[3];
+            var x;
+            if(_x1 == _x2) {
+                continue;
+            }
+            if(y < _y1 && y < _y2 || y > _y1 && y > _y2) {
+                continue;
+            }
+            var x = (y - _y1) * (_x2 - _x1) / (_y2 - _y1) + _x1;
+            if(xl == null || xl > x) {
+                xl = x;
+            }
+            if(xr == null || xr < x) {
+                xr = x;
+            }
+        }
+        for(x = xl; x < xr; x++) {
+            pset(x, y, rgb);
+        }
+    }
 };
 
     </script>
