@@ -69,9 +69,6 @@ var pset = function(x, y, rgb) {
 };
 
 var fillTriangle2 = function(x1, y1, x2, y2, x3, y3, rgb) {
-    console.log("x1, y1 = " + x1 + ", " + y1);
-    console.log("x2, y2 = " + x2 + ", " + y2);
-    console.log("x3, y3 = " + x3 + ", " + y3);
     /* 素朴なアルゴリズム */
     var xmin = Math.min(x1, x2, x3);
     var ymin = Math.min(y1, y2, y3);
@@ -92,9 +89,11 @@ var fillTriangle2 = function(x1, y1, x2, y2, x3, y3, rgb) {
             var _y2 = pair[3];
             var x;
             if(_x1 == _x2) {
+                /* _x1と_x2が等しい時は水平な線分になるので、無視する */
                 continue;
             }
             if(y < _y1 && y < _y2 || y > _y1 && y > _y2) {
+                /* スキャンラインが線分の範囲外の時は、無視する */
                 continue;
             }
             var x = (y - _y1) * (_x2 - _x1) / (_y2 - _y1) + _x1;
