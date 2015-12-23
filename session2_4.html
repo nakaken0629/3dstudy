@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Language" content="ja" />
+    <meta http-equiv="Content-Style-Type" content="text/css" />
+    <meta http-equiv="Content-Script-Type" content="text/javascript" />
+    <title>2.4. 透視投影</title>
+    <script type="text/javascript">
+
+/* 共通処理 */
+
+var canvas;
+var ctx;
+
+window.onload = function() {
+    canvas = document.getElementById("myCanvas");
+    ctx = canvas.getContext("2d");
+    main();
+};
+
+var createRgb = function(red, green, blue) {
+    return "#"
+        + ("0" + red.toString(16)).substr(-2)
+        + ("0" + green.toString(16)).substr(-2)
+        + ("0" + blue.toString(16)).substr(-2)
+    ;
+};
+
+var getRandomInt = function(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+/* 個別処理 */
+
+/**
+ * 1cm = 40px
+ * スクリーン平面：15cm x 10cm
+ * 視点からスクリーン平面までの距離：30cm
+ * 視点から前方クリッピング平面までの距離：15cm
+ * 視点から後方クリッピング平面までの距離：50,000cm
+ */
+var main = function() {
+    var t = makeTriangle();
+
+    var draw = function() {
+        cls();
+        fillTriangle(
+            t.x + t.x1, t.y + t.y1, t.z + t.z1,
+            t.x + t.x2, t.y + t.y2, t.z + t.z2,
+            t.x + t.x3, t.y + t.y3, t.z + t.z3,
+            t.rgb
+        );
+        t.z -= 10000;
+        if (t.z < 600) {
+            t = makeTriangle();
+        }
+    };
+    var proc = setInterval(draw, 20);
+};
+
+var makeTriangle = function() {
+    var x = getRandomInt(-500000 / 2, 500000 / 2);
+    var y = getRandomInt(-333333 / 2, 333333 / 2);
+    var z = 2000000;
+    var x1 = getRandomInt(-40000, 40000);
+    var y1 = getRandomInt(-40000, 40000);
+    var z1 = getRandomInt(-40000, 40000);
+    var x2 = getRandomInt(-40000, 40000);
+    var y2 = getRandomInt(-40000, 40000);
+    var z2 = getRandomInt(-40000, 40000);
+    var x3 = getRandomInt(-40000, 40000);
+    var y3 = getRandomInt(-40000, 40000);
+    var z3 = getRandomInt(-40000, 40000);
+    var red = getRandomInt(0, 255);
+    var green = getRandomInt(0, 255);
+    var blue = getRandomInt(0, 255);
+
+    return {
+        'x' : x,  'y' : y,  'z' : z,
+        'x1': x1, 'y1': y1, 'z1': z1,
+        'x2': x2, 'y2': y2, 'z2': z2,
+        'x3': x3, 'y3': y3, 'z3': z3,
+        'rgb': createRgb(red, green, blue)
+    };
+};
+
+var cls = function() {
+    ctx.clearRect(0, 0, 600, 400);
+}
+
+var fillTriangle = function(x1, y1, z1, x2, y2, z2, x3, y3, z3, rgb) {
+    var sx1 = x1 * 1200 / z1 + 300;
+    var sy1 = y1 * 1200 / z1 + 200;
+    var sx2 = x2 * 1200 / z2 + 300;
+    var sy2 = y2 * 1200 / z2 + 200;
+    var sx3 = x3 * 1200 / z3 + 300;
+    var sy3 = y3 * 1200 / z3 + 200;
+    ctx.fillStyle = rgb;
+    ctx.beginPath();
+    ctx.moveTo(sx1, sy1);
+    ctx.lineTo(sx2, sy2);
+    ctx.lineTo(sx3, sy3);
+    ctx.lineTo(sx1, sy1);
+    ctx.closePath();
+    ctx.fill();
+};
+
+    </script>
+  </head>
+  <body>
+    <h1>2.4. 透視投影</h1>
+    <canvas id="myCanvas" width="600" height="400" style="border: solid 1px black; "></canvas>
+  </body>
+</html>
