@@ -14,6 +14,7 @@
 
 var canvas;
 var ctx;
+var POLYGON_COUNT = 10;
 
 window.onload = function() {
     canvas = document.getElementById("myCanvas");
@@ -43,68 +44,76 @@ var getRandomInt = function(min, max) {
  * 視点から後方クリッピング平面までの距離：50,000cm
  */
 var main = function() {
-    var t = makeTriangle();
+    /* p -> polygon（多角形） */
+    var p = new Array(POLYGON_COUNT);
+    for (var i = 0; i < POLYGON_COUNT; i++) {
+        p[i] = makeTriangle();
+    }
 
     var draw = function() {
         cls();
-        fillTriangle(
-            t.x + t.x1, t.y + t.y1, t.z + t.z1,
-            t.x + t.x2, t.y + t.y2, t.z + t.z2,
-            t.x + t.x3, t.y + t.y3, t.z + t.z3,
-            t.rgb
-        );
-        /* 540km/h */
-        t.z -= 10000;
-        if (t.z < 600) {
-            t = makeTriangle();
+        loop: for (var j = 0; j < POLYGON_COUNT; j++) {
+            fillTriangle(p[j]);
+            /* 540km/hで近づく */
+            for(var i = 0; i < p[j].v.length; i++) {
+                p[j].v[i].z -= 10000;
+            }
+            for(var i = 0; i < p[j].v.length; i++) {
+                if (p[j].v[i].z > 600) {
+                    continue loop;
+                }
+            }
+            /* 全ての頂点が前方クリッピングの外に出たら、新しいポリゴンを作成 */
+            p[j] = makeTriangle();
         }
     };
     var proc = setInterval(draw, 20);
 };
 
+/* 三角形面のポリゴンを作成する */
 var makeTriangle = function() {
     var x = getRandomInt(-500000 / 2, 500000 / 2);
     var y = getRandomInt(-333333 / 2, 333333 / 2);
-    var z = 2000000;
-    var x1 = getRandomInt(-40000, 40000);
-    var y1 = getRandomInt(-40000, 40000);
-    var z1 = getRandomInt(-40000, 40000);
-    var x2 = getRandomInt(-40000, 40000);
-    var y2 = getRandomInt(-40000, 40000);
-    var z2 = getRandomInt(-40000, 40000);
-    var x3 = getRandomInt(-40000, 40000);
-    var y3 = getRandomInt(-40000, 40000);
-    var z3 = getRandomInt(-40000, 40000);
-    var red = getRandomInt(0, 255);
-    var green = getRandomInt(0, 255);
-    var blue = getRandomInt(0, 255);
+    var z = getRandomInt(0, 2000000);
+    
+    /* v -> vertex（頂点） */
+    var v = [];
+    for(var i = 0; i < 3; i++) {
+        v[i] = {
+            'x': x + getRandomInt(-40000, 40000),
+            'y': y + getRandomInt(-40000, 40000),
+            'z': z + getRandomInt(-40000, 40000),
+        }
+    }
+    var rgb = createRgb(
+        getRandomInt(0, 255), getRandomInt(0, 255), getRandomInt(0, 255)
+    );
 
-    return {
-        'x' : x,  'y' : y,  'z' : z,
-        'x1': x1, 'y1': y1, 'z1': z1,
-        'x2': x2, 'y2': y2, 'z2': z2,
-        'x3': x3, 'y3': y3, 'z3': z3,
-        'rgb': createRgb(red, green, blue)
-    };
+    return {'v': v, 'rgb': rgb};
 };
 
 var cls = function() {
     ctx.clearRect(0, 0, 600, 400);
-}
+};
 
-var fillTriangle = function(x1, y1, z1, x2, y2, z2, x3, y3, z3, rgb) {
-    var sx1 = x1 * 1200 / z1 + 300;
-    var sy1 = y1 * 1200 / z1 + 200;
-    var sx2 = x2 * 1200 / z2 + 300;
-    var sy2 = y2 * 1200 / z2 + 200;
-    var sx3 = x3 * 1200 / z3 + 300;
-    var sy3 = y3 * 1200 / z3 + 200;
-    ctx.fillStyle = rgb;
+var fillTriangle = function(p) {
+    var length = p.v.length;
+    /* 実座標からスクリーン座標への変換を行う */
+    var sx = new Array(length);
+    var sy = new Array(length);
+    for (var i = 0; i < length; i++) {
+        sx[i] = p.v[i].x * 1200 / p.v[i].z + 300;
+        sy[i] = p.v[i].y * 1200 / p.v[i].z + 300;
+    }
+
+    /* 変換後のポリゴンの描画を行う */
+    ctx.fillStyle = p.rgb;
     ctx.beginPath();
-    ctx.moveTo(sx1, sy1);
-    ctx.lineTo(sx2, sy2);
-    ctx.lineTo(sx3, sy3);
-    ctx.lineTo(sx1, sy1);
+    ctx.moveTo(sx[0], sy[0]);
+    for (var i = 1; i <= length; i++) {
+      var index = i % length;
+      ctx.lineTo(sx[index], sy[index]);
+    }
     ctx.closePath();
     ctx.fill();
 };
