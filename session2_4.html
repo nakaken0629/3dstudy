@@ -74,7 +74,7 @@ var main = function() {
 var makeTriangle = function() {
     var x = getRandomInt(-500000 / 2, 500000 / 2);
     var y = getRandomInt(-333333 / 2, 333333 / 2);
-    var z = getRandomInt(0, 2000000);
+    var z = getRandomInt(10000, 2000000);
     
     /* v -> vertex（頂点） */
     var v = [];
@@ -97,10 +97,30 @@ var cls = function() {
 };
 
 var fillTriangle = function(p) {
-    var length = p.v.length;
+    /* 前方クリッピング平面でクリッピングする */
+    var z = 600;
+    var p2 = {'v': [], 'rgb': p.rgb};
+    for (var i = 0; i < p.v.length; i++) {
+        var j = (i + 1) % p.v.length;
+        var v1 = p.v[i];
+        var v2 = p.v[j];
+        if (v1.z >= z) {
+            /* 起点がビューボリューム内なら使用する */
+            p2.v.push(v1);
+        }
+        if ((v1.z >= z && v2.z < z) || (v1.z < z && v2.z >= z)) {
+            /* 起点と終点の間に前方クリッピング平面があれば、交点を使用する */
+            var x = (z - v1.z) * (v2.x - v1.x) / (v2.z - v1.z) + v1.x;
+            var y = (z - v1.z) * (v2.y - v1.y) / (v2.z - v1.z) + v1.y;
+            p2.v.push({'x': x, 'y': y, 'z': z});
+        }
+    }
+    p = p2;
+
     /* 実座標からスクリーン座標への変換を行う */
-    var sx = new Array(length);
-    var sy = new Array(length);
+    var length = p.v.length;
+    var sx = [];
+    var sy = [];
     for (var i = 0; i < length; i++) {
         sx[i] = p.v[i].x * 1200 / p.v[i].z + 300;
         sy[i] = p.v[i].y * 1200 / p.v[i].z + 300;
