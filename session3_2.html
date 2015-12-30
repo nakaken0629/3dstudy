@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Language" content="ja" />
+    <meta http-equiv="Content-Style-Type" content="text/css" />
+    <meta http-equiv="Content-Script-Type" content="text/javascript" />
+    <title>3.2. 後面除去</title>
+    <script type="text/javascript">
+
+/* 共通処理 */
+
+var canvas;
+var ctx;
+
+window.onload = function() {
+    canvas = document.getElementById("myCanvas");
+    ctx = canvas.getContext("2d");
+    main();
+};
+
+var createRgb = function(red, green, blue) {
+    return "#"
+        + ("0" + red.toString(16)).substr(-2)
+        + ("0" + green.toString(16)).substr(-2)
+        + ("0" + blue.toString(16)).substr(-2)
+    ;
+};
+
+var cls = function() {
+    ctx.clearRect(0, 0, 600, 400);
+};
+
+var fillTriangle = function(p) {
+    /* 実座標からスクリーン座標への変換を行う */
+    var length = p.v.length;
+    var sx = [];
+    var sy = [];
+    for (var i = 0; i < length; i++) {
+        sx[i] = p.v[i].x * 1200 / p.v[i].z + 300;
+        sy[i] = p.v[i].y * 1200 / p.v[i].z + 200;
+    }
+
+    /* 変換後のポリゴンの描画を行う */
+    ctx.fillStyle = p.rgb;
+    ctx.beginPath();
+    ctx.moveTo(sx[0], sy[0]);
+    for (var i = 1; i <= length; i++) {
+      var index = i % length;
+      ctx.lineTo(sx[index], sy[index]);
+    }
+    ctx.closePath();
+    ctx.fill();
+};
+
+/* 個別処理 */
+
+/**
+ * 1cm = 40px
+ * スクリーン平面：15cm x 10cm
+ * 視点からスクリーン平面までの距離：30cm
+ * 視点から前方クリッピング平面までの距離：15cm
+ * 視点から後方クリッピング平面までの距離：50,000cm
+ */
+var main = function() {
+    /* p -> polygon（多角形） */
+    var v = [];
+    v[0] = {'x':     0, 'y':     0, 'z':  4000 + 30000};
+    v[1] = {'x': -3464, 'y':     0, 'z': -2000 + 30000};
+    v[2] = {'x':  1732, 'y':  3000, 'z': -2000 + 30000};
+    v[3] = {'x':  1732, 'y': -3000, 'z': -2000 + 30000};
+    var p = [];
+    p[0] = {'v': [v[0], v[1], v[2]], 'rgb': createRgb(255,   0,   0)};
+    p[1] = {'v': [v[0], v[2], v[3]], 'rgb': createRgb(  0, 255,   0)};
+    p[2] = {'v': [v[0], v[3], v[1]], 'rgb': createRgb(  0,   0, 255)};
+    p[3] = {'v': [v[1], v[3], v[2]], 'rgb': createRgb(255, 255,   0)};
+
+    var draw = function() {
+        cls();
+        for (var j = 0; j < p.length; j++) {
+            fillTriangle(p[j]);
+        }
+    };
+    var proc = setInterval(draw, 20);
+};
+
+    </script>
+  </head>
+  <body>
+    <h1>3.2. 後面除去</h1>
+    <canvas id="myCanvas" width="600" height="400" style="border: solid 1px black; "></canvas>
+  </body>
+</html>
