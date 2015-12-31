@@ -14,6 +14,7 @@
 
 var canvas;
 var ctx;
+var RU = 1.0 / 180 * Math.PI;
 
 window.onload = function() {
     canvas = document.getElementById("myCanvas");
@@ -34,6 +35,26 @@ var cls = function() {
 };
 
 var fillTriangle = function(p) {
+    /* 前方クリッピング平面でクリッピングする */
+    var z = 600;
+    var p2 = {'v': [], 'rgb': p.rgb};
+    for (var i = 0; i < p.v.length; i++) {
+        var j = (i + 1) % p.v.length;
+        var v1 = p.v[i];
+        var v2 = p.v[j];
+        if (v1.z >= z) {
+            /* 起点がビューボリューム内なら使用する */
+            p2.v.push(v1);
+        }
+        if ((v1.z >= z && v2.z < z) || (v1.z < z && v2.z >= z)) {
+            /* 起点と終点の間に前方クリッピング平面があれば、交点を使用する */
+            var x = (z - v1.z) * (v2.x - v1.x) / (v2.z - v1.z) + v1.x;
+            var y = (z - v1.z) * (v2.y - v1.y) / (v2.z - v1.z) + v1.y;
+            p2.v.push({'x': x, 'y': y, 'z': z});
+        }
+    }
+    p = p2;
+
     /* 実座標からスクリーン座標への変換を行う */
     var length = p.v.length;
     var sx = [];
@@ -55,32 +76,67 @@ var fillTriangle = function(p) {
     ctx.fill();
 };
 
+var multiply = function(v, r) {
+    /* ベクトルvに変換行列rをかける */
+    var vv = {};
+    vv.x = v.x * r[0][0] + v.y * r[1][0] + v.z * r[2][0] + v.w * r[3][0]; 
+    vv.y = v.x * r[0][1] + v.y * r[1][1] + v.z * r[2][1] + v.w * r[3][1]; 
+    vv.z = v.x * r[0][2] + v.y * r[1][2] + v.z * r[2][2] + v.w * r[3][2]; 
+    vv.w = v.x * r[0][3] + v.y * r[1][3] + v.z * r[2][3] + v.w * r[3][3]; 
+    return vv;
+}
+
 /* 個別処理 */
 
-/**
- * 1cm = 40px
- * スクリーン平面：15cm x 10cm
- * 視点からスクリーン平面までの距離：30cm
- * 視点から前方クリッピング平面までの距離：15cm
- * 視点から後方クリッピング平面までの距離：50,000cm
- */
 var main = function() {
     /* p -> polygon（多角形） */
     var v = [];
-    v[0] = {'x':     0, 'y':     0, 'z':  4000 + 30000};
-    v[1] = {'x': -3464, 'y':     0, 'z': -2000 + 30000};
-    v[2] = {'x':  1732, 'y':  3000, 'z': -2000 + 30000};
-    v[3] = {'x':  1732, 'y': -3000, 'z': -2000 + 30000};
-    var p = [];
-    p[0] = {'v': [v[0], v[1], v[2]], 'rgb': createRgb(255,   0,   0)};
-    p[1] = {'v': [v[0], v[2], v[3]], 'rgb': createRgb(  0, 255,   0)};
-    p[2] = {'v': [v[0], v[3], v[1]], 'rgb': createRgb(  0,   0, 255)};
-    p[3] = {'v': [v[1], v[3], v[2]], 'rgb': createRgb(255, 255,   0)};
-
+    v[0] = {'x':     0, 'y':     0, 'z':  4000 + 30000, 'w': 1};
+    v[1] = {'x': -3464, 'y':     0, 'z': -2000 + 30000, 'w': 1};
+    v[2] = {'x':  1732, 'y':  3000, 'z': -2000 + 30000, 'w': 1};
+    v[3] = {'x':  1732, 'y': -3000, 'z': -2000 + 30000, 'w': 1};
+    var rt1 = [
+        [1, 0,      0, 0],
+        [0, 1,      0, 0],
+        [0, 0,      1, 0],
+        [0, 0, -30000, 1]
+    ];
+    var rt2 = [
+        [1, 0,     0, 0],
+        [0, 1,     0, 0],
+        [0, 0,     1, 0],
+        [0, 0, 30000, 1]
+    ];
+    var rx = [
+        [1,                0,                 0, 0],
+        [0, Math.cos(3 * RU), -Math.sin(3 * RU), 0],
+        [0, Math.sin(3 * RU),  Math.cos(3 * RU), 0],
+        [0,                0,                 0, 1]
+    ];
+    var ry = [
+        [ Math.cos(2 * RU), 0, Math.sin(2 * RU), 0],
+        [                0, 1,                0, 0],
+        [-Math.sin(2 * RU), 0, Math.cos(2 * RU), 0],
+        [                0, 0,                0, 1]
+    ];
     var draw = function() {
+        /* ポリゴンの描画 */
+        var p = [];
+        p[0] = {'v': [v[0], v[1], v[2]], 'rgb': createRgb(255,   0,   0)};
+        p[1] = {'v': [v[0], v[2], v[3]], 'rgb': createRgb(  0, 255,   0)};
+        p[2] = {'v': [v[0], v[3], v[1]], 'rgb': createRgb(  0,   0, 255)};
+        p[3] = {'v': [v[1], v[3], v[2]], 'rgb': createRgb(255, 255,   0)};
         cls();
         for (var j = 0; j < p.length; j++) {
             fillTriangle(p[j]);
+        }
+
+        /* 頂点の回転 */
+        for (var i = 0; i < v.length; i++) {
+            v[i] = multiply(v[i], rt1);
+            v[i] = multiply(v[i], rx);
+            v[i] = multiply(v[i], ry);
+            v[i] = multiply(v[i], rt2);
         }
     };
     var proc = setInterval(draw, 20);
@@ -91,5 +147,10 @@ var main = function() {
   <body>
     <h1>3.2. 後面除去</h1>
     <canvas id="myCanvas" width="600" height="400" style="border: solid 1px black; "></canvas>
+    <p>
+      <input id="enabled" type="checkbox">
+        <label for="enabled">後面除去処理を行う</label>
+      </input>
+    </p>
   </body>
 </html>
