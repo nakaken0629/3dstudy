@@ -86,6 +86,31 @@ var multiply = function(v, r) {
     return vv;
 }
 
+var normal = function(p) {
+    /* ポリゴンpの法線ベクトルを返す */
+    var v0 = p.v[0];
+    var v1 = p.v[1];
+
+    var n = {
+        'x': v0.y * v1.z - v0.z * v1.y,
+        'y': v0.z * v1.x - v0.x * v1.z,
+        'z': v0.x * v1.y - v0.y * v1.x,
+        'w': 1
+    };
+    return n;
+}
+
+var eye = function(p) {
+    /* 視点（原点）からポリゴンpへの視線ベクトルを返す */
+    var ev = {
+        'x': (p.v[0].x + p.v[1].x + p.v[2].x) / 3.0,
+        'y': (p.v[0].y + p.v[1].y + p.v[2].y) / 3.0,
+        'z': (p.v[0].z + p.v[1].z + p.v[2].z) / 3.0,
+        'w': 1
+    };
+    return ev;
+}
+
 /* 個別処理 */
 
 var main = function() {
@@ -119,6 +144,7 @@ var main = function() {
         [-Math.sin(2 * RU), 0, Math.cos(2 * RU), 0],
         [                0, 0,                0, 1]
     ];
+
     var draw = function() {
         /* ポリゴンの描画 */
         var p = [];
@@ -128,6 +154,14 @@ var main = function() {
         p[3] = {'v': [v[1], v[3], v[2]], 'rgb': createRgb(255, 255,   0)};
         cls();
         for (var j = 0; j < p.length; j++) {
+            if (document.forms[0].enabled.checked) {
+                /* 後面除去のチェックを行う */
+                var n = normal(p[j]);
+                var ev = eye(p[j]);
+                if (n.x * ev.x + n.y * ev.y + n.z * ev.z < 0) {
+                    continue;
+                }
+            }
             fillTriangle(p[j]);
         }
 
@@ -147,10 +181,12 @@ var main = function() {
   <body>
     <h1>3.2. 後面除去</h1>
     <canvas id="myCanvas" width="600" height="400" style="border: solid 1px black; "></canvas>
-    <p>
+    <form>
+      <p>
       <input id="enabled" type="checkbox">
         <label for="enabled">後面除去処理を行う</label>
       </input>
     </p>
+    </form>
   </body>
 </html>
