@@ -34,7 +34,28 @@ var cls = function() {
     ctx.clearRect(0, 0, 600, 400);
 };
 
-var fillTriangle = function(p) {
+var fillTriangle = function(p, light) {
+    if (document.forms[0].enabled.checked) {
+        /* フラットシェーティングあり */
+        /* ポリゴンの法線ベクトル */
+        var n = normal(p);
+        /* 光線。スクリーン座標でいうと、右上の少し手前から照らしている */
+        var light = {'x': 250.0, 'y': -500.0, 'z': 1000.0, 'r': 255, 'g': 255, 'b': 255}
+        /* 法線と光線の角度を元に、ポリゴンの見た目の色を計算する */
+        var rate = (n.x * light.x + n.y * light.y + n.z * light.z)
+            / Math.sqrt(Math.pow(n.x, 2) + Math.pow(n.y, 2) + Math.pow(n.z, 2))
+            / Math.sqrt(Math.pow(light.x, 2) + Math.pow(light.y, 2) + Math.pow(light.z, 2));
+        rate = rate > 0 ? rate : 0;
+        rgb = createRgb(
+            Math.floor(p.r * light.r / 255.0 * rate),
+            Math.floor(p.g * light.g / 255.0 * rate),
+            Math.floor(p.b * light.b / 255.0 * rate)
+        );
+    } else {
+        /* フラットシェーティングなし */
+        rgb = createRgb(0, 0, 255);
+    }
+
     /* 実座標からスクリーン座標への変換を行う */
     var length = p.v.length;
     var sx = [];
@@ -45,7 +66,8 @@ var fillTriangle = function(p) {
     }
 
     /* 変換後のポリゴンの描画を行う */
-    ctx.fillStyle = p.rgb;
+    ctx.fillStyle = rgb;
+    ctx.strokeStyle = createRgb(0, 0, 0);
     ctx.beginPath();
     ctx.moveTo(sx[0], sy[0]);
     for (var i = 1; i <= length; i++) {
@@ -54,6 +76,7 @@ var fillTriangle = function(p) {
     }
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
 };
 
 var multiply = function(v, r) {
@@ -68,8 +91,18 @@ var multiply = function(v, r) {
 
 var normal = function(p) {
     /* ポリゴンpの法線ベクトルを返す */
-    var v0 = p.v[0];
-    var v1 = p.v[1];
+    var v0 = {
+        'x': p.v[0].x - p.v[1].x,
+        'y': p.v[0].y - p.v[1].y,
+        'z': p.v[0].z - p.v[1].z,
+        'w': 1
+    };
+    var v1 = {
+        'x': p.v[1].x - p.v[2].x,
+        'y': p.v[1].y - p.v[2].y,
+        'z': p.v[1].z - p.v[2].z,
+        'w': 1
+    };
 
     var n = {
         'x': v0.y * v1.z - v0.z * v1.y,
@@ -136,35 +169,33 @@ var main = function() {
     var draw = function() {
         /* ポリゴンの描画 */
         var p = [];
-        p[0]  = {'v': [v[0], v[1],  v[4]],  'rgb': createRgb(0, 0, 255)};
-        p[1]  = {'v': [v[0], v[6],  v[1]],  'rgb': createRgb(0, 0, 255)};
-        p[2]  = {'v': [v[0], v[4],  v[8]],  'rgb': createRgb(0, 0, 255)};
-        p[3]  = {'v': [v[0], v[10], v[6]],  'rgb': createRgb(0, 0, 255)};
-        p[4]  = {'v': [v[0], v[8],  v[10]], 'rgb': createRgb(0, 0, 255)};
-        p[5]  = {'v': [v[1], v[9],  v[4]],  'rgb': createRgb(0, 0, 255)};
-        p[6]  = {'v': [v[1], v[6],  v[11]], 'rgb': createRgb(0, 0, 255)};
-        p[7]  = {'v': [v[1], v[11], v[9]],  'rgb': createRgb(0, 0, 255)};
-        p[8]  = {'v': [v[2], v[5],  v[3]],  'rgb': createRgb(0, 0, 255)};
-        p[9]  = {'v': [v[2], v[3],  v[7]],  'rgb': createRgb(0, 0, 255)};
-        p[10] = {'v': [v[2], v[8],  v[5]],  'rgb': createRgb(0, 0, 255)};
-        p[11] = {'v': [v[2], v[7],  v[10]], 'rgb': createRgb(0, 0, 255)};
-        p[12] = {'v': [v[2], v[10], v[8]],  'rgb': createRgb(0, 0, 255)};
-        p[13] = {'v': [v[3], v[5],  v[9]],  'rgb': createRgb(0, 0, 255)};
-        p[14] = {'v': [v[3], v[11], v[7]],  'rgb': createRgb(0, 0, 255)};
-        p[15] = {'v': [v[3], v[9],  v[11]], 'rgb': createRgb(0, 0, 255)};
-        p[16] = {'v': [v[4], v[5],  v[8]],  'rgb': createRgb(0, 0, 255)};
-        p[17] = {'v': [v[4], v[9],  v[5]],  'rgb': createRgb(0, 0, 255)};
-        p[18] = {'v': [v[6], v[10], v[7]],  'rgb': createRgb(0, 0, 255)};
-        p[19] = {'v': [v[6], v[7],  v[11]], 'rgb': createRgb(0, 0, 255)};
+        p[0]  = {'v': [v[0], v[1],  v[4]],  'r': 0, 'g': 0, 'b': 255};
+        p[1]  = {'v': [v[0], v[6],  v[1]],  'r': 0, 'g': 0, 'b': 255};
+        p[2]  = {'v': [v[0], v[4],  v[8]],  'r': 0, 'g': 0, 'b': 255};
+        p[3]  = {'v': [v[0], v[10], v[6]],  'r': 0, 'g': 0, 'b': 255};
+        p[4]  = {'v': [v[0], v[8],  v[10]], 'r': 0, 'g': 0, 'b': 255};
+        p[5]  = {'v': [v[1], v[9],  v[4]],  'r': 0, 'g': 0, 'b': 255};
+        p[6]  = {'v': [v[1], v[6],  v[11]], 'r': 0, 'g': 0, 'b': 255};
+        p[7]  = {'v': [v[1], v[11], v[9]],  'r': 0, 'g': 0, 'b': 255};
+        p[8]  = {'v': [v[2], v[5],  v[3]],  'r': 0, 'g': 0, 'b': 255};
+        p[9]  = {'v': [v[2], v[3],  v[7]],  'r': 0, 'g': 0, 'b': 255};
+        p[10] = {'v': [v[2], v[8],  v[5]],  'r': 0, 'g': 0, 'b': 255};
+        p[11] = {'v': [v[2], v[7],  v[10]], 'r': 0, 'g': 0, 'b': 255};
+        p[12] = {'v': [v[2], v[10], v[8]],  'r': 0, 'g': 0, 'b': 255};
+        p[13] = {'v': [v[3], v[5],  v[9]],  'r': 0, 'g': 0, 'b': 255};
+        p[14] = {'v': [v[3], v[11], v[7]],  'r': 0, 'g': 0, 'b': 255};
+        p[15] = {'v': [v[3], v[9],  v[11]], 'r': 0, 'g': 0, 'b': 255};
+        p[16] = {'v': [v[4], v[5],  v[8]],  'r': 0, 'g': 0, 'b': 255};
+        p[17] = {'v': [v[4], v[9],  v[5]],  'r': 0, 'g': 0, 'b': 255};
+        p[18] = {'v': [v[6], v[10], v[7]],  'r': 0, 'g': 0, 'b': 255};
+        p[19] = {'v': [v[6], v[7],  v[11]], 'r': 0, 'g': 0, 'b': 255};
         cls();
         for (var j = 0; j < p.length; j++) {
-            if (document.forms[0].enabled.checked) {
-                /* 後面除去のチェックを行う */
-                var n = normal(p[j]);
-                var ev = eye(p[j]);
-                if (n.x * ev.x + n.y * ev.y + n.z * ev.z < 0) {
-                    continue;
-                }
+            /* 後面除去のチェックを行う */
+            var n = normal(p[j]);
+            var ev = eye(p[j]);
+            if (n.x * ev.x + n.y * ev.y + n.z * ev.z < 0) {
+                continue;
             }
             fillTriangle(p[j]);
         }

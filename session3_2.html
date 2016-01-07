@@ -88,8 +88,18 @@ var multiply = function(v, r) {
 
 var normal = function(p) {
     /* ポリゴンpの法線ベクトルを返す */
-    var v0 = p.v[0];
-    var v1 = p.v[1];
+    var v0 = {
+        'x': p.v[0].x - p.v[1].x,
+        'y': p.v[0].y - p.v[1].y,
+        'z': p.v[0].z - p.v[1].z,
+        'w': 1
+    };
+    var v1 = {
+        'x': p.v[1].x - p.v[2].x,
+        'y': p.v[1].y - p.v[2].y,
+        'z': p.v[1].z - p.v[2].z,
+        'w': 1
+    };
 
     var n = {
         'x': v0.y * v1.z - v0.z * v1.y,
