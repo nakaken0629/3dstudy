@@ -16,8 +16,6 @@ v.append(array([  +g,  0.0, +1.0, 0.0]))
 v.append(array([  -g,  0.0, +1.0, 0.0]))
 v.append(array([  +g,  0.0, -1.0, 0.0]))
 v.append(array([  -g,  0.0, -1.0, 0.0]))
-o = array([0, 0, 0, 0])
-s = 120 / 180.0 * pi
 rs = array([
     [ 1000,    0,    0, 0],
     [    0, 1000,    0, 0],
