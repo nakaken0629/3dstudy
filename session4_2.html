@@ -15,6 +15,7 @@
 var canvas;
 var ctx;
 var RU = 1.0 / 180 * Math.PI;
+var PX = 4;
 
 window.onload = function() {
     canvas = document.getElementById("myCanvas");
@@ -35,38 +36,80 @@ var cls = function() {
 };
 
 var fillTriangle = function(p, pc) {
-    var checked = document.forms[0].enabled.checked
-    if (checked) {
-        var color = averageColor(pc);
-        var rgb = createRgb(color.r, color.g, color.b);
-    } else {
-        /* フラットシェーティングなし */
-        var rgb = createRgb(0, 0, 255);
-    }
-
     /* 実座標からスクリーン座標への変換を行う */
     var length = p.length;
     var sx = [];
     var sy = [];
     for (var i = 0; i < length; i++) {
-        sx[i] = p[i].x * 1200 / p[i].z + 300;
-        sy[i] = p[i].y * 1200 / p[i].z + 200;
+        sx[i] = Math.floor(p[i].x * 1200 / p[i].z + 300);
+        sy[i] = Math.floor(p[i].y * 1200 / p[i].z + 200);
     }
 
     /* 変換後のポリゴンの描画を行う */
+    var xmin = Math.min.apply(null, sx);
+    var ymin = Math.min.apply(null, sy);
+    var xmax = Math.max.apply(null, sx);
+    var ymax = Math.max.apply(null, sy);
+    var lines = [];
+    for (var i1 = 0; i1 < length; i1++) {
+        var i2 = (i1 + 1) % length;
+        lines.push([sx[i1], sy[i1], sx[i2], sy[i2]]);
+    }
+    for (var y = ymin; y <= ymax; y+=PX) {
+        /* y軸方向にスキャンする */
+        var xl = null;  /* x left */
+        var xr = null;  /* x right */
+        for(var i = 0; i < lines.length; i++) {
+            /* 直線とスキャンラインの交点を求める */
+            var line = lines[i];
+            var _x1 = line[0];
+            var _y1 = line[1];
+            var _x2 = line[2];
+            var _y2 = line[3];
+            var x;
+            if(y < _y1 && y < _y2 || y > _y1 && y > _y2) {
+                /* スキャンラインが線分の範囲外の時は、無視する */
+                continue;
+            }
+            if(_x1 == _x2) {
+                /* _x1と_x2が等しい時は垂直な線分になるので、無視する */
+                if (xl == null) {
+                    xl = _x1;
+                }
+                if (xr == null) {
+                    xr = _x2;
+                }
+            }
+            var x = (y - _y1) * (_x2 - _x1) / (_y2 - _y1) + _x1;
+            if(xl > x || xl == null) {
+                xl = x;
+            }
+            if(xr < x || xr == null) {
+                xr = x;
+            }
+        }
+        xl = Math.floor(xl);
+        xr = Math.ceil(xr);
+
+        for(x = xl; x < xr; x+=PX) {
+            /* 色を計算する */
+            if (document.forms[0].enabled.checked) {
+                /* Guaraudシェーディングあり */
+                var color = averageColorXY(pc, sx, sy, x, y);
+                var rgb = createRgb(color.r, color.g, color.b);
+            } else {
+                /* Guaraudシェーディングなし（フラットシェーティング） */
+                var color = averageColor(pc);
+                var rgb = createRgb(color.r, color.g, color.b);
+            }
+            pset(x, y, rgb);
+        }
+    }
+};
+
+var pset = function(x, y, rgb) {
     ctx.fillStyle = rgb;
-    ctx.strokeStyle = createRgb(0, 0, 0);
-    ctx.beginPath();
-    ctx.moveTo(sx[0], sy[0]);
-    for (var i = 1; i <= length; i++) {
-      var index = i % length;
-      ctx.lineTo(sx[index], sy[index]);
-    }
-    ctx.closePath();
-    ctx.fill();
-    if (!checked) {
-        ctx.stroke();
-    }
+    ctx.fillRect(x, y, PX, PX * 2 - 1);  // Y軸は誤差による隙間を防ぐ補正あり
 };
 
 /* ベクトルvに変換行列mをかける */
@@ -126,21 +169,42 @@ var averageVector = function(list) {
     };
 };
 
-/* 色の平均を返す */
-var averageColor = function(list) {
+/* 色の平均を返す（Gouraudシェーディング） */
+var averageColorXY = function(pc, sx, sy, x, y) {
     var r = 0;
     var g = 0;
     var b = 0;
-    for (var i = 0; i < list.length; i++) {
-        rgb = list[i];
-        r += rgb.r;
-        g += rgb.g;
-        b += rgb.b;
+    var d = 0;
+    for (var i = 0; i < pc.length; i++) {
+        var color = pc[i];
+        var distance = Math.sqrt((sx[i] - x) * (sx[i] -x) + (sy[i] - y) * (sy[i] -y));
+        r += color.r * distance;
+        g += color.g * distance;
+        b += color.b * distance;
+        d += distance;
     }
     return {
-        'r': Math.floor(r / list.length),
-        'g': Math.floor(g / list.length),
-        'b': Math.floor(b / list.length)
+        'r': Math.min(Math.floor(r / d * 1.25), 255),
+        'g': Math.min(Math.floor(g / d * 1.25), 255),
+        'b': Math.min(Math.floor(b / d * 1.25), 255)
+    };
+};
+
+/* 色の平均を返す（フラットシェーディング） */
+var averageColor = function(pc) {
+    var r = 0;
+    var g = 0;
+    var b = 0;
+    for (var i = 0; i < pc.length; i++) {
+        var color = pc[i];
+        r += color.r;
+        g += color.g;
+        b += color.b;
+    }
+    return {
+        'r': Math.min(Math.floor(r / pc.length * 1.25), 255),
+        'g': Math.min(Math.floor(g / pc.length * 1.25), 255),
+        'b': Math.min(Math.floor(b / pc.length * 1.25), 255)
     };
 };
 
@@ -237,7 +301,7 @@ var main = function() {
         }
 
         /* 頂点の色の定義 */
-        c = {'r': 0, 'g': 0, 'b': 255};
+        c = {'r': 0, 'g': 255, 'b': 0};
         var vc = [];
         for (var i = 0; i < v.length; i++) {
             var rate = (vn[i].x * light.x + vn[i].y * light.y + vn[i].z * light.z)
@@ -297,7 +361,10 @@ var main = function() {
             v[i] = multiply(v[i], t2);
         }
     };
-    var proc = setInterval(draw, 20);
+    (function loop() {
+        window.requestAnimationFrame(loop);
+        draw();
+    })();
 };
 
     </script>
@@ -308,7 +375,7 @@ var main = function() {
     <form>
       <p>
       <input id="enabled" type="checkbox" checked="true">
-        <label for="enabled">Goudraudシェーティングを有効にする</label>
+        <label for="enabled">Gouraudシェーティングを有効にする</label>
       </input>
     </p>
     </form>
