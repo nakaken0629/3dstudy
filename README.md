@@ -1,6 +1,10 @@
 # 3dstudy
 『３次元CGの基礎と応用［新訂版］（ http://goo.gl/GKoQ4y ）』の勉強用プロジェクト
 
+実際に動作するサンプルは以下のURLで公開しています。
+
+http://nakaken0629.github.io/3dstudy/
+
 解説はQiitaで行っています。
 
 * 2.1. 点を描く http://qiita.com/nakaken0629/items/fdb3738968c236714b66
