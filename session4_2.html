@@ -59,6 +59,8 @@ var fillTriangle = function(p, pc) {
         /* y軸方向にスキャンする */
         var xl = null;  /* x left */
         var xr = null;  /* x right */
+        var ll = null;  /* line left */
+        var lr = null;  /* line right */
         for(var i = 0; i < lines.length; i++) {
             /* 直線とスキャンラインの交点を求める */
             var line = lines[i];
@@ -66,36 +68,42 @@ var fillTriangle = function(p, pc) {
             var _y1 = line[1];
             var _x2 = line[2];
             var _y2 = line[3];
-            var x;
             if(y < _y1 && y < _y2 || y > _y1 && y > _y2) {
                 /* スキャンラインが線分の範囲外の時は、無視する */
                 continue;
             }
-            if(_x1 == _x2) {
-                /* _x1と_x2が等しい時は垂直な線分になるので、無視する */
-                if (xl == null) {
+            if(_y1 == _y2) {
+                /* _y1と_y2が等しい時はそのまま利用する */
+                if(xl > _x1 || xl == null) {
                     xl = _x1;
+                    ll = i;
                 }
-                if (xr == null) {
+                if(xr < _x2 || xr == null) {
                     xr = _x2;
+                    lr = i;
                 }
-            }
-            var x = (y - _y1) * (_x2 - _x1) / (_y2 - _y1) + _x1;
-            if(xl > x || xl == null) {
-                xl = x;
-            }
-            if(xr < x || xr == null) {
-                xr = x;
+            } else {
+                var x = (y - _y1) * (_x2 - _x1) / (_y2 - _y1) + _x1;
+                if(xl > x || xl == null) {
+                    xl = x;
+                    ll = i;
+                }
+                if(xr < x || xr == null) {
+                    xr = x;
+                    lr = i;
+                }
             }
         }
         xl = Math.floor(xl);
         xr = Math.ceil(xr);
-
+        var cl = averageColorY(ll, y, sy, pc);
+        var cr = averageColorY(lr, y, sy, pc);
         for(x = xl; x < xr; x+=PX) {
             /* 色を計算する */
             if (document.forms[0].enabled.checked) {
                 /* Guaraudシェーディングあり */
-                var color = averageColorXY(pc, sx, sy, x, y);
+                // var color = averageColorX(xl, xr, x, cl, cr);
+                var color = cr;
                 var rgb = createRgb(color.r, color.g, color.b);
             } else {
                 /* Guaraudシェーディングなし（フラットシェーティング） */
@@ -169,24 +177,37 @@ var averageVector = function(list) {
     };
 };
 
+var averageColorY = function(i, y, sy, pc) {
+    var i1 = i;
+    var i2 = (i + 1) % sy.length;
+    var rate1 = Math.abs((sy[i1] - y) / (sy[i2] - sy[i1]));
+    var rate2 = Math.abs((sy[i2] - y) / (sy[i2] - sy[i1]));
+    var color1 = pc[i1];
+    var color2 = pc[i2];
+    var r = color1.r * rate1 + color2.r * rate2;
+    var g = color1.g * rate1 + color2.g * rate2;
+    var b = color1.b * rate1 + color2.b * rate2;
+    return {
+        'r': Math.floor(r),
+        'g': Math.floor(g),
+        'b': Math.floor(b)
+    };
+}
+
 /* 色の平均を返す（Gouraudシェーディング） */
-var averageColorXY = function(pc, sx, sy, x, y) {
+var averageColorX = function(xl, xr, x, cl, cr) {
     var r = 0;
     var g = 0;
     var b = 0;
-    var d = 0;
-    for (var i = 0; i < pc.length; i++) {
-        var color = pc[i];
-        var distance = Math.sqrt((sx[i] - x) * (sx[i] -x) + (sy[i] - y) * (sy[i] -y));
-        r += color.r * distance;
-        g += color.g * distance;
-        b += color.b * distance;
-        d += distance;
-    }
+    var rate1 = Math.abs((xl - x) / (xr - xl));
+    var rate2 = Math.abs((xr - x) / (xr - xl));
+    var r = cl.r * rate1 + cr.r * rate2;
+    var g = cl.g * rate1 + cr.g * rate2;
+    var b = cl.b * rate1 + cr.b * rate2;
     return {
-        'r': Math.min(Math.floor(r / d * 1.25), 255),
-        'g': Math.min(Math.floor(g / d * 1.25), 255),
-        'b': Math.min(Math.floor(b / d * 1.25), 255)
+        'r': Math.floor(r),
+        'g': Math.floor(g),
+        'b': Math.floor(b)
     };
 };
 
@@ -202,9 +223,9 @@ var averageColor = function(pc) {
         b += color.b;
     }
     return {
-        'r': Math.min(Math.floor(r / pc.length * 1.25), 255),
-        'g': Math.min(Math.floor(g / pc.length * 1.25), 255),
-        'b': Math.min(Math.floor(b / pc.length * 1.25), 255)
+        'r': Math.floor(r / pc.length),
+        'g': Math.floor(g / pc.length),
+        'b': Math.floor(b / pc.length)
     };
 };
 
