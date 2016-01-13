@@ -50,24 +50,20 @@ var fillTriangle = function(p, pc) {
     var ymin = Math.min.apply(null, sy);
     var xmax = Math.max.apply(null, sx);
     var ymax = Math.max.apply(null, sy);
-    var lines = [];
-    for (var i1 = 0; i1 < length; i1++) {
-        var i2 = (i1 + 1) % length;
-        lines.push([sx[i1], sy[i1], sx[i2], sy[i2]]);
-    }
     for (var y = ymin; y <= ymax; y+=PX) {
         /* y軸方向にスキャンする */
         var xl = null;  /* x left */
         var xr = null;  /* x right */
         var ll = null;  /* line left */
         var lr = null;  /* line right */
-        for(var i = 0; i < lines.length; i++) {
+        for(var i = 0; i < p.length; i++) {
             /* 直線とスキャンラインの交点を求める */
-            var line = lines[i];
-            var _x1 = line[0];
-            var _y1 = line[1];
-            var _x2 = line[2];
-            var _y2 = line[3];
+            var i1 = i;
+            var i2 = (i + 1) % p.length;
+            var _x1 = sx[i1];
+            var _y1 = sy[i1];
+            var _x2 = sx[i2];
+            var _y2 = sy[i2];
             if(y < _y1 && y < _y2 || y > _y1 && y > _y2) {
                 /* スキャンラインが線分の範囲外の時は、無視する */
                 continue;
@@ -96,14 +92,18 @@ var fillTriangle = function(p, pc) {
         }
         xl = Math.floor(xl);
         xr = Math.ceil(xr);
-        var cl = averageColorY(ll, y, sy, pc);
-        var cr = averageColorY(lr, y, sy, pc);
+        if(sx[ll] > sx[(lr + 1) % sx.length]) {
+            var cl = averageColorY(ll, y, sy, pc);
+            var cr = averageColorY(lr, y, sy, pc);
+        } else {
+            var cr = averageColorY(ll, y, sy, pc);
+            var cl = averageColorY(lr, y, sy, pc);
+        }
         for(x = xl; x < xr; x+=PX) {
             /* 色を計算する */
             if (document.forms[0].enabled.checked) {
                 /* Guaraudシェーディングあり */
-                // var color = averageColorX(xl, xr, x, cl, cr);
-                var color = cr;
+                var color = averageColorX(xl, xr, x, cl, cr);
                 var rgb = createRgb(color.r, color.g, color.b);
             } else {
                 /* Guaraudシェーディングなし（フラットシェーティング） */
@@ -177,16 +177,15 @@ var averageVector = function(list) {
     };
 };
 
+/* 辺を構成する２点の距離で平均した色を返す（Gouraudシェーディング） */
 var averageColorY = function(i, y, sy, pc) {
     var i1 = i;
     var i2 = (i + 1) % sy.length;
-    var rate1 = Math.abs((sy[i1] - y) / (sy[i2] - sy[i1]));
-    var rate2 = Math.abs((sy[i2] - y) / (sy[i2] - sy[i1]));
-    var color1 = pc[i1];
-    var color2 = pc[i2];
-    var r = color1.r * rate1 + color2.r * rate2;
-    var g = color1.g * rate1 + color2.g * rate2;
-    var b = color1.b * rate1 + color2.b * rate2;
+    var y1 = sy[i1];
+    var y2 = sy[i2];
+    var r = 1 / (y1 - y2) * (pc[i1].r * (y - y2) + pc[i2].r * (y1 - y));
+    var g = 1 / (y1 - y2) * (pc[i1].g * (y - y2) + pc[i2].g * (y1 - y));
+    var b = 1 / (y1 - y2) * (pc[i1].b * (y - y2) + pc[i2].b * (y1 - y));
     return {
         'r': Math.floor(r),
         'g': Math.floor(g),
@@ -194,7 +193,7 @@ var averageColorY = function(i, y, sy, pc) {
     };
 }
 
-/* 色の平均を返す（Gouraudシェーディング） */
+/* 左右の辺の交点の色の平均を返す（Gouraudシェーディング） */
 var averageColorX = function(xl, xr, x, cl, cr) {
     var r = 0;
     var g = 0;
