@@ -14,4 +14,4 @@ http://nakaken0629.github.io/3dstudy/
 * 3.2. 後面除去 http://qiita.com/nakaken0629/items/e7b85dd5a5ed179b6941
 * 3.3. ペインタアルゴリズム http://qiita.com/nakaken0629/items/684720cb3959185643b7
 * 4.0. フラットシェーティング http://qiita.com/nakaken0629/items/a935cd1a7e77f205f2bd
-* 4.2. フラットシェーティング http://qiita.com/nakaken0629/items/7b9a06b5cd2de75239ef
+* 4.2. Gouraudシェーティング http://qiita.com/nakaken0629/items/7b9a06b5cd2de75239ef
